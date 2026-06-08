@@ -1,5 +1,5 @@
 const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || '/api';
-export const BRANCH_ID = '6c5c053a-19c5-4d5d-8a46-6b6724a6deb3';
+export const BRANCH_ID = '6bc8bfce-b6b8-43a4-9b2a-6b5211aa6729';
 
 export interface Product {
   id: string;
