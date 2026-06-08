@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import Redis from 'ioredis';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { resolve } from 'path';
 import configuration from './config/configuration';
@@ -59,11 +60,24 @@ import { AuditInterceptor } from './common/interceptors/audit-log.interceptor';
             limit: config.get<number>('rateLimit.publicPerMin') ?? 100,
           },
         ],
-        storage: new ThrottlerStorageRedisService({
-          host: config.get<string>('redis.host'),
-          port: config.get<number>('redis.port'),
-          password: config.get<string>('redis.password'),
-        }),
+        storage: new ThrottlerStorageRedisService(
+          config.get<string>('redis.url')
+            ? new Redis(config.get<string>('redis.url')!, {
+                maxRetriesPerRequest: null,
+                enableReadyCheck: false,
+                retryStrategy: (times: number) => Math.min(times * 200, 2000),
+                tls: config.get<string>('redis.url')!.startsWith('rediss://') ? {} : undefined,
+              })
+            : new Redis({
+                host: config.get<string>('redis.host'),
+                port: config.get<number>('redis.port'),
+                password: config.get<string>('redis.password'),
+                maxRetriesPerRequest: null,
+                enableReadyCheck: false,
+                retryStrategy: (times: number) => Math.min(times * 200, 2000),
+                tls: config.get<boolean>('redis.tls') ? {} : undefined,
+              }),
+        ),
       }),
     }),
     PrismaModule,
