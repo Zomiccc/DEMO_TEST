@@ -1,0 +1,41 @@
+{
+  "name": "restaurant-ecosystem",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enterprise Restaurant Management, Ordering, Delivery, CRM, POS & Analytics Ecosystem",
+  "packageManager": "pnpm@9.1.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @app/unified dev",
+    "build": "pnpm --filter @app/unified build",
+    "api:dev": "pnpm --filter @app/api start:dev",
+    "api:build": "pnpm --filter @app/api build",
+    "web:dev": "pnpm --filter @app/web dev",
+    "web:build": "pnpm --filter @app/web build",
+    "admin:dev": "pnpm --filter @app/admin dev",
+    "admin:build": "pnpm --filter @app/admin build",
+    "rider:dev": "pnpm --filter @app/rider dev",
+    "rider:build": "pnpm --filter @app/rider build",
+    "pos:dev": "pnpm --filter @app/pos dev",
+    "pos:build": "pnpm --filter @app/pos build",
+    "unified:dev": "pnpm --filter @app/unified dev",
+    "unified:build": "pnpm --filter @app/unified build",
+    "prisma:generate": "pnpm --filter @app/api prisma:generate",
+    "prisma:migrate": "pnpm --filter @app/api prisma:migrate",
+    "prisma:seed": "pnpm --filter @app/api prisma:seed",
+    "mock-api": "node mock-api.js",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "prettier": "^3.3.2",
+    "typescript": "^5.4.5"
+  }
+}

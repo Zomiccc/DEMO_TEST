@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rms_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rms}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rms} -d ${POSTGRES_DB:-rms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rms_net
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: rms_pgbouncer
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-rms}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-rms_password}
+      DB_NAME: ${POSTGRES_DB:-rms}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 20
+      AUTH_TYPE: scram-sha-256
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rms_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: rms_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rms_net
+
+  adminer:
+    image: adminer:latest
+    container_name: rms_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - rms_net
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      target: development
+    container_name: rms_api
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: development
+    ports:
+      - "4000:4000"
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../apps/api:/workspace/apps/api
+      - ../packages:/workspace/packages
+      - /workspace/apps/api/node_modules
+    networks:
+      - rms_net
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  rms_net:
+    driver: bridge

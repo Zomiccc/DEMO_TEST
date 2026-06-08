@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tandoor — Order Food Online</title>
+  <meta name="description" content="Order delicious food online — fast delivery across the city." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            brand: { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c' },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeup { from { opacity:0; transform: translateY(8px);} to {opacity:1; transform:none;} }
+    .fadeup { animation: fadeup .4s ease both; }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-stone-200">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-brand-500 text-white grid place-items-center font-extrabold">T</div>
+        <span class="font-extrabold text-xl tracking-tight">Tandoor</span>
+        <span id="apiBadge" class="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 border border-stone-200">checking API…</span>
+      </div>
+      <div class="flex-1 max-w-md hidden sm:block">
+        <div class="relative">
+          <input id="search" type="text" placeholder="Search dishes…"
+            class="w-full bg-stone-100 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          <svg class="w-4 h-4 absolute left-3.5 top-3 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.3-4.3m0 0A7 7 0 105.7 5.7a7 7 0 0011 11z"/></svg>
+        </div>
+      </div>
+      <button onclick="toggleCart(true)" class="relative inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3M17 13l2 2M9 19a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+        Cart
+        <span id="cartCount" class="absolute -top-2 -right-2 bg-white text-brand-600 text-xs font-bold w-5 h-5 grid place-items-center rounded-full border border-brand-200">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="bg-gradient-to-br from-brand-500 to-brand-700 text-white">
+    <div class="max-w-6xl mx-auto px-4 py-14 sm:py-20">
+      <p class="uppercase tracking-widest text-brand-100 text-xs font-semibold mb-3">Free delivery within 7 km</p>
+      <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight max-w-2xl">Crave it. Tap it. <br/>We deliver it hot.</h1>
+      <p class="mt-4 text-brand-100 max-w-lg">Fresh from the kitchen to your door. Real-time tracking, wallet, loyalty points and more.</p>
+      <div class="mt-6 flex flex-wrap gap-3 text-sm">
+        <span class="bg-white/15 rounded-full px-3 py-1.5">0–7 km · Free</span>
+        <span class="bg-white/15 rounded-full px-3 py-1.5">7–10 km · Rs. 200</span>
+        <span class="bg-white/15 rounded-full px-3 py-1.5">Live order tracking</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <nav class="bg-white border-b border-stone-200 sticky top-16 z-30">
+    <div id="catBar" class="max-w-6xl mx-auto px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar"></div>
+  </nav>
+
+  <!-- Menu -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <h2 class="text-2xl font-extrabold mb-1">Menu</h2>
+    <p id="resultMeta" class="text-stone-500 text-sm mb-6">Loading…</p>
+    <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </main>
+
+  <footer class="border-t border-stone-200 py-10 text-center text-stone-400 text-sm">
+    Tandoor · Demo storefront wired to the NestJS API · API-first
+  </footer>
+
+  <!-- Cart drawer -->
+  <div id="cartOverlay" class="fixed inset-0 bg-black/40 z-50 hidden" onclick="toggleCart(false)"></div>
+  <aside id="cartPanel" class="fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="p-5 border-b flex items-center justify-between">
+      <h3 class="font-extrabold text-lg">Your Cart</h3>
+      <button onclick="toggleCart(false)" class="text-stone-400 hover:text-stone-700 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="cartItems" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
+    <div class="border-t p-5 space-y-3">
+      <div class="flex justify-between text-sm"><span class="text-stone-500">Subtotal</span><span id="cartSubtotal" class="font-semibold">Rs. 0</span></div>
+      <div class="flex justify-between text-sm"><span class="text-stone-500">Delivery (0–7 km)</span><span class="font-semibold text-green-600">Free</span></div>
+      <div class="flex justify-between text-base font-extrabold border-t pt-3"><span>Total</span><span id="cartTotal">Rs. 0</span></div>
+      <button onclick="checkout()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl py-3 transition">Checkout</button>
+    </div>
+  </aside>
+
+  <script src="/app.js"></script>
+</body>
+</html>
