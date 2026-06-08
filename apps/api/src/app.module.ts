@@ -35,6 +35,27 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { AuditInterceptor } from './common/interceptors/audit-log.interceptor';
 
+function createThrottlerRedis(config: ConfigService): Redis {
+  const url = config.get<string>('redis.url');
+  const common = {
+    maxRetriesPerRequest: null as null,
+    enableReadyCheck: false,
+    retryStrategy: (times: number) => Math.min(times * 200, 2000),
+  };
+  const client = url
+    ? new Redis(url, { ...common, tls: url.startsWith('rediss://') ? {} : undefined })
+    : new Redis({
+        ...common,
+        host: config.get<string>('redis.host'),
+        port: config.get<number>('redis.port'),
+        password: config.get<string>('redis.password'),
+        tls: config.get<boolean>('redis.tls') ? {} : undefined,
+      });
+  // Prevent unhandled 'error' events (e.g. Upstash ECONNRESET) from crashing the process.
+  client.on('error', () => {});
+  return client;
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -60,24 +81,7 @@ import { AuditInterceptor } from './common/interceptors/audit-log.interceptor';
             limit: config.get<number>('rateLimit.publicPerMin') ?? 100,
           },
         ],
-        storage: new ThrottlerStorageRedisService(
-          config.get<string>('redis.url')
-            ? new Redis(config.get<string>('redis.url')!, {
-                maxRetriesPerRequest: null,
-                enableReadyCheck: false,
-                retryStrategy: (times: number) => Math.min(times * 200, 2000),
-                tls: config.get<string>('redis.url')!.startsWith('rediss://') ? {} : undefined,
-              })
-            : new Redis({
-                host: config.get<string>('redis.host'),
-                port: config.get<number>('redis.port'),
-                password: config.get<string>('redis.password'),
-                maxRetriesPerRequest: null,
-                enableReadyCheck: false,
-                retryStrategy: (times: number) => Math.min(times * 200, 2000),
-                tls: config.get<boolean>('redis.tls') ? {} : undefined,
-              }),
-        ),
+        storage: new ThrottlerStorageRedisService(createThrottlerRedis(config)),
       }),
     }),
     PrismaModule,
