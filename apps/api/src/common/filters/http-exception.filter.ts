@@ -34,10 +34,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = (res as { message?: string | string[] }).message ?? message;
         error = (res as { error?: string }).error ?? exception.name;
       }
-    } else if (exception instanceof Error) {
-      this.logger.error(exception.message, exception.stack);
-      message = exception.message;
-      error = exception.name;
+    } else {
+      const anyMsg = exception instanceof Error ? exception.message : String(exception);
+      this.logger.error(anyMsg);
+      message = anyMsg;
+      error = exception instanceof Error ? exception.name : 'UnknownError';
     }
 
     response.status(status).json({
