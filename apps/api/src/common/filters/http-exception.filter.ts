@@ -36,6 +36,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       this.logger.error(exception.message, exception.stack);
+      message = exception.message;
+      error = exception.name;
     }
 
     response.status(status).json({
