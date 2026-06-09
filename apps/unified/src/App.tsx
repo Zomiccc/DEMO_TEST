@@ -30,7 +30,7 @@ const TABS: Record<string, { key: string; label: string; icon: string }[]> = {
   RIDER: [{ key: 'home', label: 'Orders', icon: '📦' }, { key: 'earnings', label: 'Earnings', icon: '💰' }, { key: 'profile', label: 'Profile', icon: '👤' }],
   CASHIER: [],
   KITCHEN: [],
-  MANAGER: [{ key: 'dashboard', label: 'Dash', icon: '📊' }, { key: 'orders', label: 'Orders', icon: '📦' }, { key: 'kds', label: 'KDS', icon: '🔥' }, { key: 'inventory', label: 'Stock', icon: '📦' }],
+  MANAGER: [{ key: 'dashboard', label: 'Dash', icon: '📊' }, { key: 'menu', label: 'Menu', icon: '📝' }, { key: 'offers', label: 'Offers', icon: '🎁' }, { key: 'orders', label: 'Orders', icon: '📦' }, { key: 'kds', label: 'KDS', icon: '🔥' }, { key: 'inventory', label: 'Stock', icon: '📦' }],
   SUPER_ADMIN: [{ key: 'dashboard', label: 'Dash', icon: '📊' }, { key: 'orders', label: 'Orders', icon: '📦' }, { key: 'inventory', label: 'Stock', icon: '📦' }],
 };
 
