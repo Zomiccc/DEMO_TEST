@@ -48,6 +48,19 @@ export default function CustomerView({ screen, token }: { screen: string; token:
   const [orderType, setOrderType] = useState<'DELIVERY' | 'PICKUP' | 'DINE_IN'>('DELIVERY');
   const [promoCode, setPromoCode] = useState('');
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'JAZZCASH' | 'EASYPAISA' | 'CARD' | 'WALLET'>('CASH_ON_DELIVERY');
+  const [payProcessing, setPayProcessing] = useState(false);
+  const [payStep, setPayStep] = useState<'method' | 'details' | 'processing' | 'success'>('method');
+  const [walletBalance] = useState(2450);
+  // Fake payment form states
+  const [jazzPhone, setJazzPhone] = useState('');
+  const [jazzPin, setJazzPin] = useState('');
+  const [easyPhone, setEasyPhone] = useState('');
+  const [easyOtp, setEasyOtp] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardName, setCardName] = useState('');
 
   useEffect(() => {
     const raw = localStorage.getItem('cart');
@@ -152,17 +165,30 @@ export default function CustomerView({ screen, token }: { screen: string; token:
       const order = await api.placeOrder({
         type: orderType,
         items: cart.map((i) => ({ productId: i.productId, quantity: i.qty })),
-        paymentMethod: orderType === 'DELIVERY' ? 'CASH_ON_DELIVERY' : 'CARD',
+        paymentMethod,
         addressId: orderType === 'DELIVERY' ? selectedAddress : undefined,
         promoCode: promoCode || undefined,
       }, token);
       saveCart([]);
       alert(`Order placed! ${order.orderNumber}`);
       setInnerView('home');
+      setPayStep('method');
+      setJazzPhone(''); setJazzPin(''); setEasyPhone(''); setEasyOtp('');
+      setCardNumber(''); setCardExpiry(''); setCardCvv(''); setCardName('');
     } catch (e: any) {
       alert(e.message ?? 'Failed to place order');
     }
     setPlacing(false);
+  };
+
+  const simulatePayment = async () => {
+    setPayProcessing(true);
+    setPayStep('processing');
+    await new Promise((r) => setTimeout(r, 2000));
+    setPayProcessing(false);
+    setPayStep('success');
+    await new Promise((r) => setTimeout(r, 800));
+    placeOrder();
   };
 
   const openTrack = (o: Order) => { setTrackingOrder(o); setInnerView('track'); };
@@ -197,14 +223,43 @@ export default function CustomerView({ screen, token }: { screen: string; token:
   }
 
   if (innerView === 'checkout') {
+    const total = pricing?.total ?? cartSubtotal;
+    const cardType = cardNumber.startsWith('4') ? 'visa' : cardNumber.startsWith('5') ? 'mastercard' : cardNumber.startsWith('3') ? 'amex' : null;
+
+    const methodStyles: Record<string, { border: string; bg: string; text: string; dot: string }> = {
+      CASH_ON_DELIVERY: { border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+      JAZZCASH: { border: 'border-orange-500', bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
+      EASYPAISA: { border: 'border-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+      CARD: { border: 'border-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+      WALLET: { border: 'border-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500' },
+    };
+
+    const PaymentMethodCard = ({ id, label, icon, desc, active }: { id: typeof paymentMethod; label: string; icon: string; desc: string; active: boolean }) => {
+      const st = methodStyles[id];
+      return (
+        <button onClick={() => { setPaymentMethod(id); setPayStep('details'); }}
+          className={`flex items-center gap-3 w-full p-3 rounded-xl border-2 text-left transition ${active ? `${st.border} ${st.bg}` : 'border-stone-200 hover:border-stone-300 bg-white'}`}>
+          <span className="text-2xl">{icon}</span>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-bold ${active ? st.text : 'text-stone-800'}`}>{label}</p>
+            <p className="text-xs text-stone-500 truncate">{desc}</p>
+          </div>
+          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${active ? st.border : 'border-stone-300'}`}>
+            {active && <div className={`w-2.5 h-2.5 rounded-full ${st.dot}`} />}
+          </div>
+        </button>
+      );
+    };
+
     return (
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         <div className="flex items-center gap-2 mb-2">
-          <button onClick={() => setInnerView('home')} className="text-stone-500 hover:text-brand-600 text-sm font-medium">← Back</button>
+          <button onClick={() => { setInnerView('home'); setPayStep('method'); }} className="text-stone-500 hover:text-brand-600 text-sm font-medium">← Back</button>
         </div>
         <h1 className="text-2xl font-extrabold">Checkout</h1>
         {cart.length === 0 ? <p className="text-stone-400">Your cart is empty.</p> : (
           <div className="space-y-4">
+            {/* Order Type */}
             <div className="flex gap-2">
               {(['DELIVERY', 'PICKUP', 'DINE_IN'] as const).map((t) => (
                 <button key={t} onClick={() => setOrderType(t)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${orderType === t ? 'bg-brand-500 text-white' : 'bg-stone-100 text-stone-600'}`}>
@@ -225,6 +280,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
               </div>
             )}
 
+            {/* Promo Code */}
             <div className="bg-white rounded-xl border border-stone-200 p-4">
               <p className="text-sm font-semibold mb-2">Promo Code</p>
               <div className="flex gap-2">
@@ -233,21 +289,253 @@ export default function CustomerView({ screen, token }: { screen: string; token:
               </div>
             </div>
 
+            {/* Cart Items */}
             {cart.map((i) => (
               <div key={i.productId} className="flex justify-between bg-white rounded-xl border border-stone-200 p-4">
                 <span className="font-medium text-sm">{i.name} × {i.qty}</span>
                 <span className="font-semibold text-sm">{rs(i.qty * i.price)}</span>
               </div>
             ))}
+
+            {/* Order Summary */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-3">
               <div className="flex justify-between text-sm"><span className="text-stone-500">Subtotal</span><span className="font-semibold">{rs(pricing?.subtotal ?? cartSubtotal)}</span></div>
               <div className="flex justify-between text-sm"><span className="text-stone-500">Delivery</span><span className="font-semibold text-green-600">{pricing?.deliveryFee ? rs(pricing.deliveryFee) : 'Free'}</span></div>
               {pricing?.discount > 0 && <div className="flex justify-between text-sm"><span className="text-stone-500">Discount</span><span className="font-semibold text-green-600">−{rs(pricing.discount)}</span></div>}
-              <div className="flex justify-between text-base font-extrabold border-t pt-3"><span>Total</span><span>{rs(pricing?.total ?? cartSubtotal)}</span></div>
-              <button onClick={placeOrder} disabled={placing} className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition">
-                {placing ? 'Placing...' : 'Place Order'}
-              </button>
+              <div className="flex justify-between text-base font-extrabold border-t pt-3"><span>Total</span><span>{rs(total)}</span></div>
             </div>
+
+            {/* Payment Method Selection */}
+            {payStep === 'method' && (
+              <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-3">
+                <p className="text-sm font-bold text-stone-800">Select Payment Method</p>
+                <div className="space-y-2">
+                  <PaymentMethodCard id="CASH_ON_DELIVERY" label="Cash on Delivery" icon="💵" desc="Pay when your order arrives" active={paymentMethod === 'CASH_ON_DELIVERY'} />
+                  <PaymentMethodCard id="JAZZCASH" label="JazzCash" icon="📱" desc="Pay via JazzCash Mobile Account" active={paymentMethod === 'JAZZCASH'} />
+                  <PaymentMethodCard id="EASYPAISA" label="EasyPaisa" icon="💚" desc="Pay via EasyPaisa Mobile Account" active={paymentMethod === 'EASYPAISA'} />
+                  <PaymentMethodCard id="CARD" label="Credit / Debit Card" icon="💳" desc="Visa, Mastercard, PayPak" active={paymentMethod === 'CARD'} />
+                  <PaymentMethodCard id="WALLET" label="Wallet Balance" icon="👛" desc={`Rs. ${walletBalance.toLocaleString()} available`} active={paymentMethod === 'WALLET'} />
+                </div>
+              </div>
+            )}
+
+            {/* JazzCash Payment Form */}
+            {payStep === 'details' && paymentMethod === 'JAZZCASH' && (
+              <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">📱</span>
+                  <div>
+                    <p className="text-sm font-bold text-orange-700">JazzCash Payment</p>
+                    <p className="text-xs text-stone-500">Secure payment via JazzCash Mobile Account</p>
+                  </div>
+                </div>
+                <div className="bg-orange-50 rounded-xl p-4 space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-orange-800">JazzCash Mobile Number</label>
+                    <input type="tel" placeholder="03XX XXXXXXX" value={jazzPhone} onChange={(e) => setJazzPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                      className="w-full mt-1 bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm font-mono" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-orange-800">MPIN</label>
+                    <input type="password" placeholder="••••" maxLength={4} value={jazzPin} onChange={(e) => setJazzPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      className="w-full mt-1 bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm font-mono tracking-widest" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setPayStep('method')} className="flex-1 py-2.5 rounded-xl text-sm font-bold border border-stone-200 text-stone-600">Back</button>
+                  <button onClick={simulatePayment} disabled={jazzPhone.length < 11 || jazzPin.length < 4 || payProcessing}
+                    className="flex-[2] bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold rounded-xl py-2.5 text-sm transition">
+                    {payProcessing ? 'Processing...' : `Pay ${rs(total)}`}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* EasyPaisa Payment Form */}
+            {payStep === 'details' && paymentMethod === 'EASYPAISA' && (
+              <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">💚</span>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-700">EasyPaisa Payment</p>
+                    <p className="text-xs text-stone-500">Secure payment via EasyPaisa Mobile Account</p>
+                  </div>
+                </div>
+                <div className="bg-emerald-50 rounded-xl p-4 space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-emerald-800">EasyPaisa Mobile Number</label>
+                    <input type="tel" placeholder="03XX XXXXXXX" value={easyPhone} onChange={(e) => setEasyPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                      className="w-full mt-1 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-mono" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-emerald-800">OTP Code</label>
+                    <input type="text" placeholder="XXXXXX" maxLength={6} value={easyOtp} onChange={(e) => setEasyOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full mt-1 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-mono tracking-widest" />
+                    <p className="text-xs text-emerald-600 mt-1">Enter the 6-digit code sent to your number</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setPayStep('method')} className="flex-1 py-2.5 rounded-xl text-sm font-bold border border-stone-200 text-stone-600">Back</button>
+                  <button onClick={simulatePayment} disabled={easyPhone.length < 11 || easyOtp.length < 6 || payProcessing}
+                    className="flex-[2] bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold rounded-xl py-2.5 text-sm transition">
+                    {payProcessing ? 'Processing...' : `Pay ${rs(total)}`}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Card Payment Form */}
+            {payStep === 'details' && paymentMethod === 'CARD' && (
+              <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">💳</span>
+                  <div>
+                    <p className="text-sm font-bold text-blue-700">Card Payment</p>
+                    <p className="text-xs text-stone-500">Visa, Mastercard, PayPak — Secure 3D checkout</p>
+                  </div>
+                </div>
+                {/* Card Preview */}
+                <div className="relative bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl p-5 text-white shadow-lg">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-10 h-7 bg-amber-200/80 rounded" />
+                    <span className="text-xs font-bold uppercase tracking-wider opacity-70">{cardType ? cardType : 'CARD'}</span>
+                  </div>
+                  <p className="text-xl font-mono tracking-[0.15em] mb-4">
+                    {cardNumber ? cardNumber.replace(/(\d{4})(?!$)/g, '$1 ') : '•••• •••• •••• ••••'}
+                  </p>
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase opacity-60">Card Holder</p>
+                      <p className="text-xs font-semibold truncate max-w-[140px]">{cardName || 'YOUR NAME'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase opacity-60">Expires</p>
+                      <p className="text-xs font-semibold">{cardExpiry || 'MM/YY'}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700">Card Number</label>
+                    <input type="text" placeholder="1234 5678 9012 3456" value={cardNumber} maxLength={19}
+                      onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19))}
+                      className="w-full mt-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm font-mono" />
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="text-xs font-semibold text-stone-700">Expiry</label>
+                      <input type="text" placeholder="MM/YY" maxLength={5} value={cardExpiry}
+                        onChange={(e) => {
+                          let v = e.target.value.replace(/\D/g, '');
+                          if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2, 4);
+                          setCardExpiry(v);
+                        }}
+                        className="w-full mt-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm font-mono" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs font-semibold text-stone-700">CVV</label>
+                      <input type="password" placeholder="•••" maxLength={4} value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        className="w-full mt-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm font-mono tracking-widest" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700">Card Holder Name</label>
+                    <input type="text" placeholder="AS PER CARD" value={cardName}
+                      onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                      className="w-full mt-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm font-semibold tracking-wide" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setPayStep('method')} className="flex-1 py-2.5 rounded-xl text-sm font-bold border border-stone-200 text-stone-600">Back</button>
+                  <button onClick={simulatePayment} disabled={cardNumber.length < 16 || cardExpiry.length < 5 || cardCvv.length < 3 || !cardName || payProcessing}
+                    className="flex-[2] bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl py-2.5 text-sm transition">
+                    {payProcessing ? 'Processing...' : `Pay ${rs(total)}`}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Wallet Payment */}
+            {payStep === 'details' && paymentMethod === 'WALLET' && (
+              <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">👛</span>
+                  <div>
+                    <p className="text-sm font-bold text-violet-700">Wallet Payment</p>
+                    <p className="text-xs text-stone-500">Pay using your in-app wallet balance</p>
+                  </div>
+                </div>
+                <div className="bg-violet-50 rounded-xl p-4 text-center">
+                  <p className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Available Balance</p>
+                  <p className="text-3xl font-extrabold text-violet-700 mt-1">Rs. {walletBalance.toLocaleString()}</p>
+                  <p className="text-xs text-violet-500 mt-1">Order total: Rs. {total.toLocaleString()}</p>
+                  <p className="text-xs text-violet-500">Remaining after: Rs. {(walletBalance - total).toLocaleString()}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setPayStep('method')} className="flex-1 py-2.5 rounded-xl text-sm font-bold border border-stone-200 text-stone-600">Back</button>
+                  <button onClick={simulatePayment} disabled={walletBalance < total || payProcessing}
+                    className="flex-[2] bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold rounded-xl py-2.5 text-sm transition">
+                    {payProcessing ? 'Processing...' : `Pay ${rs(total)}`}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* COD Confirmation */}
+            {payStep === 'details' && paymentMethod === 'CASH_ON_DELIVERY' && (
+              <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">💵</span>
+                  <div>
+                    <p className="text-sm font-bold text-green-700">Cash on Delivery</p>
+                    <p className="text-xs text-stone-500">Pay cash when your order is delivered</p>
+                  </div>
+                </div>
+                <div className="bg-green-50 rounded-xl p-4 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 text-lg">✓</span>
+                    <p className="text-sm text-green-800">Keep exact change ready: <strong>{rs(total)}</strong></p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 text-lg">✓</span>
+                    <p className="text-sm text-green-800">Our rider will call before arrival</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 text-lg">✓</span>
+                    <p className="text-sm text-green-800">No extra delivery fee for COD orders</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setPayStep('method')} className="flex-1 py-2.5 rounded-xl text-sm font-bold border border-stone-200 text-stone-600">Back</button>
+                  <button onClick={placeOrder} disabled={placing}
+                    className="flex-[2] bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-xl py-2.5 text-sm transition">
+                    {placing ? 'Placing...' : 'Confirm Order'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Processing Overlay */}
+            {payStep === 'processing' && (
+              <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center space-y-3">
+                <div className="w-12 h-12 border-4 border-stone-200 border-t-brand-500 rounded-full animate-spin mx-auto" />
+                <p className="text-sm font-bold text-stone-700">Processing Payment...</p>
+                <p className="text-xs text-stone-500">Please do not close this window</p>
+                <p className="text-xs text-stone-400 font-mono">Txn Ref: RMS-{Date.now().toString(36).toUpperCase()}</p>
+              </div>
+            )}
+
+            {/* Success */}
+            {payStep === 'success' && (
+              <div className="bg-white rounded-2xl border border-green-200 p-8 text-center space-y-3">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-2xl">✓</span>
+                </div>
+                <p className="text-sm font-bold text-green-700">Payment Successful!</p>
+                <p className="text-xs text-stone-500">Placing your order now...</p>
+              </div>
+            )}
           </div>
         )}
       </div>
