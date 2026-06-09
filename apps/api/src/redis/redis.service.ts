@@ -12,8 +12,12 @@ export class RedisService implements OnModuleDestroy {
   constructor(@Inject(ConfigService) config: ConfigService) {
     const url = config.get<string>('redis.url');
     const commonOptions = {
-      maxRetriesPerRequest: null as null,
+      // Fail commands fast instead of buffering them forever when the
+      // connection is unstable — prevents requests hanging indefinitely.
+      maxRetriesPerRequest: 2,
+      commandTimeout: 5000,
       enableReadyCheck: false,
+      keepAlive: 10000,
       retryStrategy: (times: number) => Math.min(times * 200, 2000),
       lazyConnect: false,
     };
