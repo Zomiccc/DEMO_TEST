@@ -87,9 +87,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email/phone + password (+ TOTP for admins)' })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const tokens = await this.auth.login(dto);
-    this.setAuthCookies(res, tokens);
-    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    try {
+      const tokens = await this.auth.login(dto);
+      this.setAuthCookies(res, tokens);
+      return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    } catch (e: any) {
+      return { debug_error: e?.message ?? String(e), debug_stack: e?.stack ?? 'none' };
+    }
   }
 
   @Public()
