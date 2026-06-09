@@ -83,6 +83,13 @@ export class AuthController {
   }
 
   @Public()
+  @Post('test')
+  @HttpCode(HttpStatus.OK)
+  testPost() {
+    return { ok: true };
+  }
+
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email/phone + password (+ TOTP for admins)' })
