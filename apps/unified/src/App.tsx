@@ -179,7 +179,7 @@ export default function App() {
   const tabs = TABS[role] || [];
 
   return (
-    <div className="h-screen flex flex-col max-w-2xl mx-auto bg-stone-50 shadow-2xl">
+    <div className="h-screen w-full flex flex-col bg-stone-50">
       <header className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-brand-500 grid place-items-center font-extrabold text-sm text-white">T</div>

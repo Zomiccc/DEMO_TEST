@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { api, rs, type Product, type Category, type Order, type Address } from '../api';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -25,6 +25,25 @@ interface CartItem {
   variantName?: string;
   addons?: string[];
 }
+
+const JazzCashLogo = ({ className = 'h-7 w-auto' }: { className?: string }) => (
+  <svg viewBox="0 0 140 36" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M6,18 Q14,4 28,10 Q32,14 28,26 Q22,34 10,30 Q2,26 6,18" fill="#FFC107"/>
+    <path d="M18,18 Q32,4 46,14 Q52,20 46,32 Q38,38 24,34 Q10,30 18,18" fill="#F44336"/>
+    <text x="56" y="25" fontFamily="Arial,sans-serif" fontSize="13" fontWeight="bold" fill="#111">JazzCash</text>
+  </svg>
+);
+
+const EasyPaisaLogo = ({ className = 'h-7 w-auto' }: { className?: string }) => (
+  <svg viewBox="0 0 150 36" className={className} xmlns="http://www.w3.org/2000/svg">
+    <circle cx="18" cy="14" r="13" fill="#1a1a1a"/>
+    <path d="M12,10 Q18,6 24,10" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    <line x1="18" y1="10" x2="18" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+    <path d="M12,20 Q18,24 24,20" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    <path d="M6,30 Q18,38 30,30" stroke="#00B04F" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+    <text x="42" y="25" fontFamily="Arial,sans-serif" fontSize="13" fontWeight="bold" fill="#111">easypaisa</text>
+  </svg>
+);
 
 export default function CustomerView({ screen, token }: { screen: string; token: string }) {
   const [categories, setCategories] = useState<Category[]>([{ id: 'all', name: 'All', slug: 'all' }]);
@@ -197,7 +216,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
     const lat = trackingOrder.address?.lat ?? 31.5104;
     const lng = trackingOrder.address?.lng ?? 74.3487;
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <div className="w-full px-4 lg:px-8 py-6 space-y-4">
         <button onClick={() => setInnerView('orders')} className="text-sm text-stone-500 hover:text-brand-600 font-medium">← Back to orders</button>
         <h1 className="text-xl font-extrabold">Track Order {trackingOrder.orderNumber}</h1>
         <div className={`inline-block text-xs font-bold px-3 py-1 rounded-full ${STATUS_COLORS[trackingOrder.status] ?? ''}`}>{trackingOrder.status}</div>
@@ -234,12 +253,12 @@ export default function CustomerView({ screen, token }: { screen: string; token:
       WALLET: { border: 'border-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500' },
     };
 
-    const PaymentMethodCard = ({ id, label, icon, desc, active }: { id: typeof paymentMethod; label: string; icon: string; desc: string; active: boolean }) => {
+    const PaymentMethodCard = ({ id, label, icon, desc, active }: { id: typeof paymentMethod; label: string; icon: ReactNode; desc: string; active: boolean }) => {
       const st = methodStyles[id];
       return (
         <button onClick={() => { setPaymentMethod(id); setPayStep('details'); }}
           className={`flex items-center gap-3 w-full p-3 rounded-xl border-2 text-left transition ${active ? `${st.border} ${st.bg}` : 'border-stone-200 hover:border-stone-300 bg-white'}`}>
-          <span className="text-2xl">{icon}</span>
+          <div className="shrink-0">{icon}</div>
           <div className="flex-1 min-w-0">
             <p className={`text-sm font-bold ${active ? st.text : 'text-stone-800'}`}>{label}</p>
             <p className="text-xs text-stone-500 truncate">{desc}</p>
@@ -252,7 +271,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
     };
 
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <div className="w-full px-4 lg:px-8 py-6 space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <button onClick={() => { setInnerView('home'); setPayStep('method'); }} className="text-stone-500 hover:text-brand-600 text-sm font-medium">← Back</button>
         </div>
@@ -311,8 +330,8 @@ export default function CustomerView({ screen, token }: { screen: string; token:
                 <p className="text-sm font-bold text-stone-800">Select Payment Method</p>
                 <div className="space-y-2">
                   <PaymentMethodCard id="CASH_ON_DELIVERY" label="Cash on Delivery" icon="💵" desc="Pay when your order arrives" active={paymentMethod === 'CASH_ON_DELIVERY'} />
-                  <PaymentMethodCard id="JAZZCASH" label="JazzCash" icon="📱" desc="Pay via JazzCash Mobile Account" active={paymentMethod === 'JAZZCASH'} />
-                  <PaymentMethodCard id="EASYPAISA" label="EasyPaisa" icon="💚" desc="Pay via EasyPaisa Mobile Account" active={paymentMethod === 'EASYPAISA'} />
+                  <PaymentMethodCard id="JAZZCASH" label="JazzCash" icon={<JazzCashLogo />} desc="Pay via JazzCash Mobile Account" active={paymentMethod === 'JAZZCASH'} />
+                  <PaymentMethodCard id="EASYPAISA" label="EasyPaisa" icon={<EasyPaisaLogo />} desc="Pay via EasyPaisa Mobile Account" active={paymentMethod === 'EASYPAISA'} />
                   <PaymentMethodCard id="CARD" label="Credit / Debit Card" icon="💳" desc="Visa, Mastercard, PayPak" active={paymentMethod === 'CARD'} />
                   <PaymentMethodCard id="WALLET" label="Wallet Balance" icon="👛" desc={`Rs. ${walletBalance.toLocaleString()} available`} active={paymentMethod === 'WALLET'} />
                 </div>
@@ -323,7 +342,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
             {payStep === 'details' && paymentMethod === 'JAZZCASH' && (
               <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-2xl">📱</span>
+                  <JazzCashLogo className="h-8 w-auto" />
                   <div>
                     <p className="text-sm font-bold text-orange-700">JazzCash Payment</p>
                     <p className="text-xs text-stone-500">Secure payment via JazzCash Mobile Account</p>
@@ -355,7 +374,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
             {payStep === 'details' && paymentMethod === 'EASYPAISA' && (
               <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-2xl">💚</span>
+                  <EasyPaisaLogo className="h-8 w-auto" />
                   <div>
                     <p className="text-sm font-bold text-emerald-700">EasyPaisa Payment</p>
                     <p className="text-xs text-stone-500">Secure payment via EasyPaisa Mobile Account</p>
@@ -545,7 +564,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
   if (innerView === 'product' && selectedProduct) {
     const price = currentPrice(selectedProduct);
     return (
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="w-full px-4 lg:px-8 py-6">
         <button onClick={() => setInnerView('home')} className="text-sm text-stone-500 hover:text-brand-600 mb-4 inline-block font-medium">← Back to menu</button>
         <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
           <div className="h-56 bg-gradient-to-br from-stone-100 to-stone-200 grid place-items-center text-8xl">
@@ -602,7 +621,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
 
   if (screen === 'cart') {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <div className="w-full px-4 lg:px-8 py-6 space-y-4">
         <h1 className="text-2xl font-extrabold">Your Cart</h1>
         {cart.length === 0 ? (
           <div className="text-center py-20">
@@ -642,7 +661,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
 
   if (screen === 'orders') {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+      <div className="w-full px-4 lg:px-8 py-6 space-y-4">
         <h1 className="text-2xl font-extrabold">My Orders</h1>
         {orders.length === 0 ? <p className="text-stone-400">No orders yet.</p> : (
           <div className="space-y-4">
