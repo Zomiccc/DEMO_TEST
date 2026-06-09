@@ -25,8 +25,12 @@ export class HealthController {
         return { database: { status: 'up' } };
       },
       async (): Promise<HealthIndicatorResult> => {
-        const pong = await this.redis.client.ping();
-        return { redis: { status: pong === 'PONG' ? 'up' : 'down' } };
+        try {
+          const pong = await this.redis.client.ping();
+          return { redis: { status: pong === 'PONG' ? 'up' : 'down' } };
+        } catch {
+          return { redis: { status: 'down' } };
+        }
       },
     ]);
   }

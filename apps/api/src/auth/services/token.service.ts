@@ -55,11 +55,15 @@ export class TokenService {
   async rotate(payload: JwtPayload): Promise<AuthTokens> {
     if (!payload.jti) throw new UnauthorizedException('Malformed refresh token');
     const key = REDIS_KEYS.refreshToken(payload.sub, payload.jti);
-    const exists = await this.redis.get(key);
-    if (!exists) throw new UnauthorizedException('Refresh token revoked or expired');
+    try {
+      const exists = await this.redis.get(key);
+      if (!exists) throw new UnauthorizedException('Refresh token revoked or expired');
+      await this.redis.del(key);
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      // Redis unavailable — allow rotation as best-effort.
+    }
 
-    // Revoke the used token (single-use rotation)
-    await this.redis.del(key);
     return this.issueTokens({
       userId: payload.sub,
       email: payload.email,
@@ -69,12 +73,21 @@ export class TokenService {
   }
 
   async revokeAll(userId: string): Promise<void> {
-    const keys = await this.redis.client.keys(REDIS_KEYS.refreshToken(userId, '*'));
-    if (keys.length) await this.redis.client.del(...keys);
+    try {
+      const keys = await this.redis.client.keys(REDIS_KEYS.refreshToken(userId, '*'));
+      if (keys.length) await this.redis.client.del(...keys);
+    } catch {
+      // Redis unavailable — tokens remain in memory until Redis recovers.
+    }
   }
 
   private async whitelistRefresh(userId: string, jti: string): Promise<void> {
-    const sevenDays = 7 * 24 * 60 * 60;
-    await this.redis.setEx(REDIS_KEYS.refreshToken(userId, jti), '1', sevenDays);
+    try {
+      const sevenDays = 7 * 24 * 60 * 60;
+      await this.redis.setEx(REDIS_KEYS.refreshToken(userId, jti), '1', sevenDays);
+    } catch {
+      // Redis unavailable — login still succeeds, but refresh-token
+      // rotation will not be enforced until Redis recovers.
+    }
   }
 }
