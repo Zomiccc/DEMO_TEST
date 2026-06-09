@@ -19,7 +19,7 @@ export class HealthController {
     const result: Record<string, { status: string }> = {};
 
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.user.findFirst({ select: { id: true } });
       result.database = { status: 'up' };
     } catch {
       result.database = { status: 'down' };
