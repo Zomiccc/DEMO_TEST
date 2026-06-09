@@ -26,25 +26,6 @@ interface CartItem {
   addons?: string[];
 }
 
-const JazzCashLogo = ({ className = 'h-7 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 140 36" className={className} xmlns="http://www.w3.org/2000/svg">
-    <path d="M6,18 Q14,4 28,10 Q32,14 28,26 Q22,34 10,30 Q2,26 6,18" fill="#FFC107"/>
-    <path d="M18,18 Q32,4 46,14 Q52,20 46,32 Q38,38 24,34 Q10,30 18,18" fill="#F44336"/>
-    <text x="56" y="25" fontFamily="Arial,sans-serif" fontSize="13" fontWeight="bold" fill="#111">JazzCash</text>
-  </svg>
-);
-
-const EasyPaisaLogo = ({ className = 'h-7 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 150 36" className={className} xmlns="http://www.w3.org/2000/svg">
-    <circle cx="18" cy="14" r="13" fill="#1a1a1a"/>
-    <path d="M12,10 Q18,6 24,10" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-    <line x1="18" y1="10" x2="18" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-    <path d="M12,20 Q18,24 24,20" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-    <path d="M6,30 Q18,38 30,30" stroke="#00B04F" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-    <text x="42" y="25" fontFamily="Arial,sans-serif" fontSize="13" fontWeight="bold" fill="#111">easypaisa</text>
-  </svg>
-);
-
 export default function CustomerView({ screen, token }: { screen: string; token: string }) {
   const [categories, setCategories] = useState<Category[]>([{ id: 'all', name: 'All', slug: 'all' }]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -330,8 +311,8 @@ export default function CustomerView({ screen, token }: { screen: string; token:
                 <p className="text-sm font-bold text-stone-800">Select Payment Method</p>
                 <div className="space-y-2">
                   <PaymentMethodCard id="CASH_ON_DELIVERY" label="Cash on Delivery" icon="💵" desc="Pay when your order arrives" active={paymentMethod === 'CASH_ON_DELIVERY'} />
-                  <PaymentMethodCard id="JAZZCASH" label="JazzCash" icon={<JazzCashLogo />} desc="Pay via JazzCash Mobile Account" active={paymentMethod === 'JAZZCASH'} />
-                  <PaymentMethodCard id="EASYPAISA" label="EasyPaisa" icon={<EasyPaisaLogo />} desc="Pay via EasyPaisa Mobile Account" active={paymentMethod === 'EASYPAISA'} />
+                  <PaymentMethodCard id="JAZZCASH" label="JazzCash" icon={<img src="/logos/jazzcash.png" className="h-7 w-auto" alt="JazzCash" />} desc="Pay via JazzCash Mobile Account" active={paymentMethod === 'JAZZCASH'} />
+                  <PaymentMethodCard id="EASYPAISA" label="EasyPaisa" icon={<img src="/logos/easypaisa.png" className="h-7 w-auto" alt="EasyPaisa" />} desc="Pay via EasyPaisa Mobile Account" active={paymentMethod === 'EASYPAISA'} />
                   <PaymentMethodCard id="CARD" label="Credit / Debit Card" icon="💳" desc="Visa, Mastercard, PayPak" active={paymentMethod === 'CARD'} />
                   <PaymentMethodCard id="WALLET" label="Wallet Balance" icon="👛" desc={`Rs. ${walletBalance.toLocaleString()} available`} active={paymentMethod === 'WALLET'} />
                 </div>
@@ -342,7 +323,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
             {payStep === 'details' && paymentMethod === 'JAZZCASH' && (
               <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <JazzCashLogo className="h-8 w-auto" />
+                  <img src="/logos/jazzcash.png" className="h-8 w-auto" alt="JazzCash" />
                   <div>
                     <p className="text-sm font-bold text-orange-700">JazzCash Payment</p>
                     <p className="text-xs text-stone-500">Secure payment via JazzCash Mobile Account</p>
@@ -374,7 +355,7 @@ export default function CustomerView({ screen, token }: { screen: string; token:
             {payStep === 'details' && paymentMethod === 'EASYPAISA' && (
               <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <EasyPaisaLogo className="h-8 w-auto" />
+                  <img src="/logos/easypaisa.png" className="h-8 w-auto" alt="EasyPaisa" />
                   <div>
                     <p className="text-sm font-bold text-emerald-700">EasyPaisa Payment</p>
                     <p className="text-xs text-stone-500">Secure payment via EasyPaisa Mobile Account</p>
