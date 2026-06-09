@@ -28,6 +28,7 @@ import { PosModule } from './pos/pos.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { SegmentsModule } from './segments/segments.module';
+import { DebugModule } from './debug/debug.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
@@ -85,6 +86,7 @@ import { AuditInterceptor } from './common/interceptors/audit-log.interceptor';
     AnalyticsModule,
     CampaignsModule,
     SegmentsModule,
+    DebugModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
