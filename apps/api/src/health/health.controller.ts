@@ -1,6 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HealthCheck, HealthCheckService, HealthIndicatorResult } from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { Public } from '../common/decorators/public.decorator';
@@ -9,29 +8,33 @@ import { Public } from '../common/decorators/public.decorator';
 @Controller('health')
 export class HealthController {
   constructor(
-    private readonly health: HealthCheckService,
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
   ) {}
 
   @Public()
   @Get()
-  @HealthCheck()
   @ApiOperation({ summary: 'Liveness/readiness probe (DB + Redis)' })
-  check() {
-    return this.health.check([
-      async (): Promise<HealthIndicatorResult> => {
-        await this.prisma.$queryRaw`SELECT 1`;
-        return { database: { status: 'up' } };
-      },
-      async (): Promise<HealthIndicatorResult> => {
-        try {
-          const pong = await this.redis.client.ping();
-          return { redis: { status: pong === 'PONG' ? 'up' : 'down' } };
-        } catch {
-          return { redis: { status: 'down' } };
-        }
-      },
-    ]);
+  async check() {
+    const result: Record<string, { status: string }> = {};
+
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      result.database = { status: 'up' };
+    } catch {
+      result.database = { status: 'down' };
+    }
+
+    try {
+      const pong = await this.redis.client.ping();
+      result.redis = { status: pong === 'PONG' ? 'up' : 'down' };
+    } catch {
+      result.redis = { status: 'down' };
+    }
+
+    return {
+      status: result.database?.status === 'up' ? 'ok' : 'error',
+      info: result,
+    };
   }
 }
